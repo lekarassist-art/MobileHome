@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master Camper L3H2 — Mobile Home Design</title>
+<style>
+  :root{
+    --bg:#f4efe7; --panel:#ffffff; --ink:#2b2f33; --ink2:#6b625a;
+    --accent:#d96b2f; --line:#d8d0c4; --chip:#eee7db;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Avenir Next","Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--ink);}
+  header{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+    padding:14px 22px; background:#14181c; color:#f4efe7;
+  }
+  header h1{font-size:19px; letter-spacing:.4px; font-weight:650;}
+  header p{font-size:12.5px; color:#b9b2a6; margin-top:3px;}
+  .tabs{display:flex; gap:8px;}
+  .tabs button{
+    border:1px solid #3a4147; background:#1d2328; color:#d9d2c6; padding:9px 16px;
+    border-radius:10px; cursor:pointer; font-size:13px; font-weight:600; letter-spacing:.3px;
+    transition:.15s;
+  }
+  .tabs button:hover{border-color:var(--accent); color:#fff;}
+  .tabs button.on{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .toolbar{
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+    padding:10px 22px; border-bottom:1px solid var(--line); background:#faf6ee;
+  }
+  .toolbar label{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink2); cursor:pointer; user-select:none;}
+  .toolbar input[type=checkbox]{accent-color:var(--accent); width:15px; height:15px;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink2); margin-left:auto;}
+  .legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px;}
+  main{position:relative;}
+  .view{display:none; padding:18px 22px 8px;}
+  .view.on{display:block;}
+  .stage{max-width:1250px; margin:0 auto; background:var(--panel); border:1px solid var(--line);
+         border-radius:16px; overflow:hidden; box-shadow:0 8px 30px rgba(40,30,15,.07);}
+  svg.plan{display:block; width:100%; height:auto; user-select:none;}
+  .caption{padding:10px 18px 14px; font-size:12px; color:var(--ink2); letter-spacing:.4px;}
+  #view3d .stage{height:min(72vh,760px); position:relative;
+    background:radial-gradient(120% 100% at 50% 0%, #dcebf3 0%, #eef0ea 55%, #e4ddd0 100%);}
+  #gl{width:100%; height:100%; display:block; touch-action:none;}
+  #tip{
+    position:fixed; pointer-events:none; background:#14181c; color:#fff; font-size:12.5px;
+    padding:5px 10px; border-radius:8px; opacity:0; transition:opacity .12s; z-index:40; white-space:nowrap;
+  }
+  #panel{
+    position:fixed; right:18px; bottom:18px; width:330px; max-height:70vh; overflow:auto;
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    box-shadow:0 14px 40px rgba(30,20,5,.16); z-index:30; padding:18px 20px;
+  }
+  #panel h2{font-size:16px; margin-bottom:2px;}
+  #panel .sub{font-size:12px; color:var(--accent); font-weight:700; letter-spacing:.5px; text-transform:uppercase; margin-bottom:10px;}
+  #panel ul{list-style:none;}
+  #panel li{font-size:13px; color:#4a4a45; padding:5px 0 5px 18px; position:relative; line-height:1.45;}
+  #panel li::before{content:""; position:absolute; left:2px; top:11px; width:7px; height:7px; border-radius:50%; background:var(--accent);}
+  #panel .rows{width:100%; border-collapse:collapse; margin-top:4px;}
+  #panel .rows td{font-size:12.5px; padding:4.5px 0; border-bottom:1px dashed var(--line); color:#4a4a45;}
+  #panel .rows td:first-child{color:var(--ink2); width:44%;}
+  footer{
+    display:flex; flex-wrap:wrap; gap:8px; padding:14px 22px 22px; justify-content:center;
+  }
+  footer span{background:var(--chip); border:1px solid var(--line); color:#55504a;
+    font-size:12px; padding:6px 12px; border-radius:999px; white-space:nowrap;}
+  svg .pick{cursor:pointer;}
+  svg .pick rect, svg .pick circle, svg .pick path{transition:filter .15s;}
+  svg .pick.sel rect, svg .pick.sel circle, svg .pick.sel path{stroke:#d96b2f !important; stroke-width:22 !important;}
+  svg .lbl{font-weight:700; fill:#4a4036; text-anchor:middle; letter-spacing:1px;}
+  svg .sub{font-weight:500; fill:#8a7f72; text-anchor:middle;}
+  svg .dimtxt{fill:#7a6f61; font-weight:600; text-anchor:middle; letter-spacing:1px;}
+  svg .util-lbl{fill:#b3541e; font-weight:700; text-anchor:middle; letter-spacing:1px;}
+  #fallback3d{padding:60px 30px; text-align:center; color:var(--ink2); font-size:14px; display:none;}
+  @media (max-width:760px){
+    #panel{left:12px; right:12px; width:auto; bottom:12px; max-height:44vh;}
+    header h1{font-size:16px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>MASTER CAMPER&nbsp;L3H2 — Mobile Home Design</h1>
+    <p>Renault Master L3H2 long-wheelbase, high roof · 6,198 × 2,070 × 2,495 mm · full camper conversion</p>
+  </div>
+  <nav class="tabs">
+    <button data-view="plan" class="on">Floor Plan</button>
+    <button data-view="side">Side Elevation</button>
+    <button data-view="v3d">3D Tour</button>
+  </nav>
+</header>
+
+<div class="toolbar">
+  <label><input type="checkbox" id="chkUtil" unchecked> Systems layer (water · power · gas · heating)</label>
+  <div class="legend">
+    <span><i style="background:#c9a06d"></i>Sleeping</span>
+    <span><i style="background:#b7cec8"></i>Kitchen</span>
+    <span><i style="background:#9fc3d4"></i>Wet bath</span>
+    <span><i style="background:#d9bf97"></i>Lounge</span>
+    <span><i style="background:#c8ad89"></i>Storage</span>
+    <span><i style="background:#b3541e"></i>Systems</span>
+  </div>
+</div>
+
+<main>
+
+<!-- ════════════════════ FLOOR PLAN ════════════════════ -->
+<section class="view on" id="view-plan">
+  <div class="stage">
+  <svg class="plan" viewBox="-160 -170 6600 2620" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="wood" width="240" height="186" patternUnits="userSpaceOnUse">
+        <rect width="240" height="186" fill="#e7d3ae"/>
+        <path d="M0,62 H240 M0,124 H240" stroke="#d9c299" stroke-width="4"/>
+        <path d="M60,0 V62 M180,62 V124 M120,124 V186" stroke="#d9c299" stroke-width="4"/>
+      </pattern>
+      <pattern id="hatch" width="46" height="46" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="46" height="46" fill="#eef0f2"/>
+        <path d="M0,0 V46" stroke="#b8c2cb" stroke-width="7"/>
+      </pattern>
+    </defs>
+
+    <!-- vehicle shell -->
+    <rect x="0" y="0" width="6198" height="2070" rx="150" fill="#fdfdfc" stroke="#2f3437" stroke-width="16"/>
+    <!-- windshield hint -->
+    <path d="M5640,140 Q5905,1035 5640,1930" fill="none" stroke="#7fa6bb" stroke-width="20"/>
+    <!-- interior floor -->
+    <rect x="150" y="105" width="4800" height="1860" fill="url(#wood)"/>
+    <!-- wheel arches -->
+    <rect x="790" y="105" width="700" height="250" rx="90" fill="url(#hatch)" stroke="#9aa6b0" stroke-width="8"/>
+    <rect x="790" y="1715" width="700" height="250" rx="90" fill="url(#hatch)" stroke="#9aa6b0" stroke-width="8"/>
+    <!-- sliding door aperture -->
+    <rect x="3300" y="1930" width="1150" height="80" fill="#f4efe7" stroke="#2f3437" stroke-width="10" stroke-dasharray="34 22"/>
+    <text class="sub" x="3875" y="2040" font-size="54">SLIDING DOOR ▸</text>
+
+    <!-- ─── BED + GARAGE ─── -->
+    <g class="pick" data-id="garage">
+      <rect x="215" y="430" width="1750" height="1310" rx="40" fill="none" stroke="#8a7f72" stroke-width="10" stroke-dasharray="40 26"/>
+      <text class="sub" x="1090" y="1640" font-size="56">GARAGE · BATTERIES · 700 L</text>
+    </g>
+    <g class="pick" data-id="bed">
+      <rect x="150" y="365" width="1880" height="1440" rx="46" fill="#c9a06d" stroke="#8a6a42" stroke-width="10"/>
+      <rect x="185" y="400" width="1810" height="1370" rx="36" fill="#efe6d8"/>
+      <rect x="255" y="450" width="540" height="560" rx="60" fill="#ffffff" stroke="#d8d0c4" stroke-width="8"/>
+      <rect x="255" y="1160" width="540" height="560" rx="60" fill="#ffffff" stroke="#d8d0c4" stroke-width="8"/>
+      <text class="lbl" x="1230" y="990" font-size="72">DOUBLE BED</text>
+      <text class="sub" x="1230" y="1075" font-size="58">1,880 × 1,400 mm</text>
+    </g>
+    <text class="sub" x="2190" y="1050" font-size="48" transform="rotate(-90 2190 1050)">passage</text>
+
+    <!-- ─── KITCHEN ─── -->
+    <g class="pick" data-id="kitchen">
+      <rect x="2350" y="105" width="1360" height="620" rx="26" fill="#b7cec8" stroke="#7fa198" stroke-width="10"/>
+      <g class="pick" data-id="fridge">
+        <rect x="2390" y="145" width="520" height="520" rx="30" fill="#cfd6da" stroke="#8fa3ab" stroke-width="9"/>
+        <circle cx="2650" cy="405" r="26" fill="#8fa3ab"/>
+        <text class="lbl" x="2650" y="380" font-size="56">FRIDGE</text>
+        <text class="sub" x="2650" y="450" font-size="50">60 L</text>
+      </g>
+      <g class="pick" data-id="sink">
+        <rect x="2940" y="215" width="400" height="340" rx="34" fill="#dfe6ea" stroke="#8fa3ab" stroke-width="9"/>
+        <circle cx="2985" cy="260" r="22" fill="#8fa3ab"/>
+        <text class="lbl" x="3140" y="405" font-size="54">SINK</text>
+      </g>
+      <g class="pick" data-id="stove">
+        <rect x="3370" y="245" width="320" height="340" rx="30" fill="#2a2e33" stroke="#111417" stroke-width="8"/>
+        <circle cx="3460" cy="415" r="72" fill="none" stroke="#5b636b" stroke-width="12"/>
+        <circle cx="3600" cy="415" r="72" fill="none" stroke="#5b636b" stroke-width="12"/>
+        <text class="sub" x="3530" y="640" font-size="48" fill="#dcd6ca">HOB 2-BURNER</text>
+      </g>
+    </g>
+
+    <!-- ─── DINETTE ─── -->
+    <g class="pick" data-id="dinette">
+      <rect x="2350" y="1385" width="1000" height="580" rx="30" fill="#d9bf97" stroke="#a98d68" stroke-width="10"/>
+      <rect x="2365" y="1850" width="970" height="100" rx="20" fill="#cbb08a"/>
+      <text class="lbl" x="2850" y="1650" font-size="62">DINETTE</text>
+      <text class="sub" x="2850" y="1730" font-size="50">2 belted seats · storage</text>
+    </g>
+    <!-- removable pedestal table (deployed position) -->
+    <g class="pick" data-id="table">
+      <circle cx="3450" cy="1665" r="350" fill="none" stroke="#a98d68" stroke-width="10" stroke-dasharray="38 26"/>
+      <circle cx="3450" cy="1665" r="60" fill="#c9a06d"/>
+      <text class="sub" x="3450" y="2090" font-size="50">TABLE Ø700 (removable)</text>
+    </g>
+
+    <!-- ─── WET BATH ─── -->
+    <g class="pick" data-id="bath">
+      <rect x="3710" y="105" width="1060" height="850" rx="26" fill="#bcd3de" stroke="#7fa6bb" stroke-width="10"/>
+      <g class="pick" data-id="toilet">
+        <rect x="3780" y="155" width="380" height="520" rx="90" fill="#ffffff" stroke="#aab6bd" stroke-width="9"/>
+        <text class="lbl" x="3970" y="440" font-size="50" fill="#6b7780">WC</text>
+      </g>
+      <g class="pick" data-id="basin">
+        <rect x="4210" y="155" width="320" height="300" rx="26" fill="#ffffff" stroke="#aab6bd" stroke-width="9"/>
+        <text class="sub" x="4370" y="330" font-size="46" fill="#6b7780">BASIN</text>
+      </g>
+      <circle cx="4300" cy="720" r="90" fill="none" stroke="#7fa6bb" stroke-width="10"/>
+      <path d="M4300,720 m-90,0 a90,90 0 0 1 90,-90" fill="#a9c4d2" opacity=".7"/>
+      <text class="lbl" x="4240" y="905" font-size="54" fill="#41616f">SHOWER</text>
+    </g>
+
+    <!-- ─── WARDROBE ─── -->
+    <g class="pick" data-id="wardrobe">
+      <rect x="4420" y="1520" width="530" height="445" rx="24" fill="#c8ad89" stroke="#a98d68" stroke-width="10"/>
+      <line x1="4460" y1="1600" x2="4910" y2="1600" stroke="#7a6244" stroke-width="12" stroke-dasharray="30 20"/>
+      <line x1="4445" y1="1740" x2="4925" y2="1740" stroke="#a98d68" stroke-width="8"/>
+      <line x1="4445" y1="1860" x2="4925" y2="1860" stroke="#a98d68" stroke-width="8"/>
+      <text class="sub" x="4685" y="1690" font-size="48">WARDROBE</text>
+    </g>
+
+    <!-- bulkhead + cab -->
+    <line x1="4950" y1="105" x2="4950" y2="1965" stroke="#8a7f72" stroke-width="10" stroke-dasharray="34 24"/>
+    <rect x="5560" y="180" width="90" height="1710" rx="20" fill="#3f464e"/>
+    <g class="pick" data-id="cab">
+      <rect x="5010" y="300" width="520" height="520" rx="60" fill="#9fb0bd" stroke="#6b7d8c" stroke-width="10"/>
+      <rect x="5010" y="1250" width="520" height="520" rx="60" fill="#9fb0bd" stroke="#6b7d8c" stroke-width="10"/>
+      <circle cx="5480" cy="560" r="130" fill="none" stroke="#3f464e" stroke-width="22"/>
+      <line x1="5350" y1="560" x2="5610" y2="560" stroke="#3f464e" stroke-width="14"/>
+      <line x1="5480" y1="430" x2="5480" y2="690" stroke="#3f464e" stroke-width="14"/>
+      <text class="sub" x="5270" y="1050" font-size="50">CAB (LHD)</text>
+    </g>
+
+    <!-- ─── SYSTEMS LAYER ─── -->
+    <g id="utilLayerPlan" style="display:none">
+      <g class="pick" data-id="fresh">
+        <rect x="2940" y="245" width="500" height="380" rx="40" fill="none" stroke="#b3541e" stroke-width="11" stroke-dasharray="36 24"/>
+        <text class="util-lbl" x="3190" y="455" font-size="52">FRESH 90 L</text>
+      </g>
+      <g class="pick" data-id="grey">
+        <rect x="3760" y="185" width="480" height="380" rx="40" fill="none" stroke="#b3541e" stroke-width="11" stroke-dasharray="36 24"/>
+        <text class="util-lbl" x="4000" y="395" font-size="52">GREY 85 L</text>
+      </g>
+      <g class="pick" data-id="heater">
+        <circle cx="4860" cy="1035" r="95" fill="none" stroke="#b3541e" stroke-width="11" stroke-dasharray="30 20"/>
+        <text class="util-lbl" x="4860" y="1210" font-size="48">HEATER</text>
+      </g>
+      <g class="pick" data-id="gas">
+        <rect x="2390" y="1420" width="440" height="380" rx="40" fill="none" stroke="#b3541e" stroke-width="11" stroke-dasharray="36 24"/>
+        <text class="util-lbl" x="2610" y="1630" font-size="48">GAS 2×11 kg</text>
+      </g>
+      <g class="pick" data-id="battery">
+        <rect x="300" y="1560" width="550" height="230" rx="36" fill="none" stroke="#b3541e" stroke-width="11" stroke-dasharray="30 20"/>
+        <text class="util-lbl" x="575" y="1700" font-size="46">LFP 200 Ah</text>
+        <rect x="900" y="1560" width="430" height="230" rx="36" fill="none" stroke="#b3541e" stroke-width="11" stroke-dasharray="30 20"/>
+        <text class="util-lbl" x="1115" y="1700" font-size="46">INVERTER</text>
+        <rect x="1380" y="1560" width="250" height="230" rx="36" fill="none" stroke="#b3541e" stroke-width="11" stroke-dasharray="30 20"/>
+        <text class="util-lbl" x="1505" y="1700" font-size="44">MPPT</text>
+      </g>
+    </g>
+
+    <!-- ─── DIMENSIONS ─── -->
+    <g stroke="#7a6f61" stroke-width="7" fill="none">
+      <line x1="0" y1="2280" x2="6198" y2="2280"/>
+      <line x1="0" y1="2240" x2="0" y2="2320"/><line x1="6198" y1="2240" x2="6198" y2="2320"/>
+      <line x1="-80" y1="0" x2="-80" y2="2070"/>
+      <line x1="-120" y1="0" x2="-40" y2="0"/><line x1="-120" y1="2070" x2="-40" y2="2070"/>
+    </g>
+    <text class="dimtxt" x="3100" y="2400" font-size="62">6,198 mm — L3 wheelbase 4,332 mm</text>
+    <text class="dimtxt" x="-140" y="1035" font-size="58" transform="rotate(-90 -140 1035)">2,070 mm</text>
+    <!-- scale bar -->
+    <g stroke="#4a4036" stroke-width="12">
+      <line x1="150" y1="2520" x2="650" y2="2520"/>
+      <line x1="150" y1="2480" x2="150" y2="2560"/><line x1="650" y1="2480" x2="650" y2="2560"/>
+    </g>
+    <text class="dimtxt" x="400" y="2640" font-size="50">500 mm</text>
+  </svg>
+  </div>
+  <p class="caption">TOP VIEW · dimensions in mm · interior cargo zone 4,800 × 1,860 mm · click any item for details</p>
+</section>
+
+<!-- ════════════════════ SIDE ELEVATION ════════════════════ -->
+<section class="view" id="view-side">
+  <div class="stage">
+  <svg class="plan" viewBox="-160 -340 6740 3560" xmlns="http://www.w3.org/2000/svg">
+    <!-- body outline (left side) -->
+    <path d="M60,2900 L60,560 Q60,405 230,405 L4750,405 Q5120,405 5380,580 L5770,830 Q5990,975 6065,1195 L6135,1470 L6180,1520 L6180,2900 Z"
+          fill="#fdfdfc" stroke="#2f3437" stroke-width="16"/>
+    <!-- glasshouse -->
+    <polygon points="5390,600 5760,840 6050,1205 6125,1465 6180,1520 6180,2900 5390,2900"
+             fill="#cfe3ee" opacity=".85"/>
+    <line x1="5390" y1="600" x2="5390" y2="2900" stroke="#9db4c2" stroke-width="10"/>
+    <rect x="5020" y="1150" width="240" height="580" rx="30" fill="#cfe3ee" stroke="#9db4c2" stroke-width="9"/>
+    <rect x="5300" y="1150" width="240" height="580" rx="30" fill="#cfe3ee" stroke="#9db4c2" stroke-width="9"/>
+    <!-- kitchen window -->
+    <g class="pick" data-id="winK">
+      <rect x="2550" y="1150" width="800" height="600" rx="30" fill="#cfe3ee" stroke="#7fa6bb" stroke-width="10"/>
+    </g>
+    <!-- floor / ceiling -->
+    <rect x="150" y="2750" width="4800" height="45" fill="#c9a06d"/>
+    <line x1="150" y1="920" x2="4950" y2="920" stroke="#d8d0c4" stroke-width="26"/>
+
+    <!-- furniture -->
+    <g class="pick" data-id="bed">
+      <rect x="150" y="2320" width="1880" height="430" fill="#c9a06d"/>
+      <rect x="150" y="2160" width="1880" height="160" rx="30" fill="#efe6d8"/>
+      <text class="sub" x="1090" y="2560" font-size="56">BED over garage</text>
+    </g>
+    <g class="pick" data-id="battery">
+      <rect x="300" y="2600" width="600" height="130" rx="24" fill="none" stroke="#b3541e" stroke-width="10" stroke-dasharray="30 20"/>
+      <text class="util-lbl" x="600" y="2690" font-size="46">LFP + INVERTER</text>
+    </g>
+    <g class="pick" data-id="kitchen">
+      <rect x="2350" y="1850" width="1360" height="900" fill="#b7cec8" stroke="#7fa198" stroke-width="9"/>
+      <line x1="2350" y1="1850" x2="3710" y2="1850" stroke="#5f8d84" stroke-width="22"/>
+      <line x1="2910" y1="1850" x2="2910" y2="2750" stroke="#7fa198" stroke-width="9" stroke-dasharray="26 20"/>
+      <text class="sub" x="3030" y="2350" font-size="56">KITCHEN</text>
+    </g>
+    <g class="pick" data-id="dinette">
+      <rect x="2350" y="2300" width="1000" height="450" fill="#d9bf97"/>
+      <rect x="2350" y="1880" width="115" height="420" fill="#cbb08a"/>
+      <text class="sub" x="2900" y="2560" font-size="54">DINETTE</text>
+    </g>
+    <g class="pick" data-id="bath">
+      <rect x="3710" y="700" width="1060" height="2050" fill="#bcd3de" opacity=".92" stroke="#7fa6bb" stroke-width="10"/>
+      <text class="sub" x="4240" y="1300" font-size="56" fill="#41616f">WET</text>
+      <text class="sub" x="4240" y="1370" font-size="56" fill="#41616f">BATH</text>
+    </g>
+    <g class="pick" data-id="wardrobe">
+      <rect x="4420" y="900" width="530" height="1850" fill="#c8ad89" stroke="#a98d68" stroke-width="9"/>
+      <text class="sub" x="4685" y="1500" font-size="50" transform="rotate(-90 4685 1500)">WARDROBE</text>
+    </g>
+
+    <!-- cab furniture -->
+    <g class="pick" data-id="cab">
+      <rect x="5030" y="2350" width="480" height="300" rx="40" fill="#9fb0bd"/>
+      <rect x="5400" y="1770" width="110" height="560" rx="40" fill="#9fb0bd"/>
+      <circle cx="5450" cy="1850" r="120" fill="none" stroke="#3f464e" stroke-width="20"/>
+      <text class="sub" x="5250" y="2560" font-size="54">CAB</text>
+    </g>
+
+    <!-- roof gear -->
+    <g class="pick" data-id="solar">
+      <rect x="1650" y="355" width="1000" height="50" rx="14" fill="#1d2f52"/>
+      <rect x="2750" y="355" width="1000" height="50" rx="14" fill="#1d2f52"/>
+      <path d="M2150,300 v55 M3250,300 v55" stroke="#7a6f61" stroke-width="8"/>
+      <text class="dimtxt" x="2150" y="240" font-size="54">SOLAR 2 × 200 W</text>
+    </g>
+    <g class="pick" data-id="fan">
+      <rect x="3800" y="330" width="300" height="90" rx="20" fill="#dfe3e6" stroke="#9aa6b0" stroke-width="9"/>
+      <path d="M3800,330 q150,-110 300,0" fill="#cfe3ee" stroke="#9aa6b0" stroke-width="9"/>
+      <rect x="4200" y="330" width="300" height="90" rx="20" fill="#dfe3e6" stroke="#9aa6b0" stroke-width="9"/>
+      <path d="M4200,330 q150,-110 300,0" fill="#cfe3ee" stroke="#9aa6b0" stroke-width="9"/>
+      <text class="dimtxt" x="4150" y="180" font-size="54">ROOF FANS × 2</text>
+    </g>
+
+    <!-- underfloor systems -->
+    <g class="pick" data-id="fresh">
+      <rect x="2940" y="2795" width="500" height="85" rx="34" fill="#b9cfe0" stroke="#7fa6bb" stroke-width="8"/>
+      <text class="util-lbl" x="3190" y="3010" font-size="50">FRESH 90 L</text>
+      <line x1="3190" y1="2880" x2="3190" y2="2950" stroke="#7a6f61" stroke-width="6"/>
+    </g>
+    <g class="pick" data-id="grey">
+      <rect x="3760" y="2795" width="480" height="85" rx="34" fill="#b9cfe0" stroke="#7fa6bb" stroke-width="8"/>
+      <text class="util-lbl" x="4000" y="3010" font-size="50">GREY 85 L</text>
+      <line x1="4000" y1="2880" x2="4000" y2="2950" stroke="#7a6f61" stroke-width="6"/>
+    </g>
+    <g class="pick" data-id="heater">
+      <rect x="4770" y="2790" width="180" height="70" rx="20" fill="#e0a96d" stroke="#a97844" stroke-width="8"/>
+      <line x1="4930" y1="2855" x2="4930" y2="2900" stroke="#7a6f61" stroke-width="12"/>
+      <text class="util-lbl" x="4860" y="3010" font-size="50">HEATER 2 kW</text>
+      <line x1="4860" y1="2790" x2="4860" y2="2795" stroke="#7a6f61" stroke-width="6"/>
+    </g>
+
+    <!-- wheels -->
+    <path d="M830,2900 a460,460 0 0 1 920,0 Z" fill="#f4efe7"/>
+    <path d="M5162,2900 a460,460 0 0 1 920,0 Z" fill="#f4efe7"/>
+    <circle cx="1290" cy="2520" r="380" fill="#23282d"/><circle cx="1290" cy="2520" r="150" fill="#9aa6b0"/>
+    <circle cx="5622" cy="2520" r="380" fill="#23282d"/><circle cx="5622" cy="2520" r="150" fill="#9aa6b0"/>
+    <line x1="-60" y1="2900" x2="6260" y2="2900" stroke="#4a4036" stroke-width="18"/>
+
+    <!-- dimensions -->
+    <g stroke="#7a6f61" stroke-width="7" fill="none">
+      <line x1="60" y1="3080" x2="6180" y2="3080"/>
+      <line x1="60" y1="3040" x2="60" y2="3120"/><line x1="6180" y1="3040" x2="6180" y2="3120"/>
+      <line x1="6330" y1="405" x2="6330" y2="2900"/>
+      <line x1="6290" y1="405" x2="6370" y2="405"/><line x1="6290" y1="2900" x2="6370" y2="2900"/>
+    </g>
+    <text class="dimtxt" x="3120" y="3200" font-size="62">6,198 mm overall length</text>
+    <text class="dimtxt" x="6500" y="1650" font-size="58" transform="rotate(-90 6500 1650)">2,495 mm (H2)</text>
+    <text class="dimtxt" x="4870" y="1830" font-size="50" transform="rotate(-90 4870 1830)" fill="#a09583">1,850 mm interior</text>
+  </svg>
+  </div>
+  <p class="caption">LEFT-SIDE ELEVATION · sliding door &amp; bathroom are on the right-hand side · dimensions in mm</p>
+</section>
+
+<!-- ════════════════════ 3D TOUR ════════════════════ -->
+<section class="view" id="view-v3d">
+  <div class="stage" id="glwrap">
+    <canvas id="gl"></canvas>
+    <div id="fallback3d">3D view needs an internet connection (loads Three.js from CDN).<br>The floor-plan and elevation views work offline.</div>
+  </div>
+  <p class="caption">3D TOUR · drag to orbit · scroll to zoom · hover / click furniture for info · auto-rotates until you grab it</p>
+</section>
+
+</main>
+
+<footer>
+  <span>GVW 3,500 kg · payload ≈ 1,000 kg</span>
+  <span>Sleeps 2 + child</span>
+  <span>Fresh 90 L / Grey 85 L</span>
+  <span>LiFePO₄ 200 Ah · 2,560 Wh</span>
+  <span>Solar 400 W</span>
+  <span>Inverter 2,000 W</span>
+  <span>Diesel heater 2 kW</span>
+  <span>Fridge 60 L</span>
+  <span>Gas 2 × 11 kg</span>
+</footer>
+
+<aside id="panel">
+  <h2 id="p-title">Overview</h2>
+  <div class="sub" id="p-sub">Master L3H2 · camper conversion</div>
+  <div id="p-body"></div>
+</aside>
+
+<div id="tip"></div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+"three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+
+<script>
+const DETAILS={
+ overview:{title:"Overview",sub:"Master L3H2 · camper conversion",rows:[
+  ["Layout","Rear bed · mid kitchen + dinette · wet bath"],
+  ["Sleeping","2 adults (1,880 × 1,400) + child in dinette"],
+  ["GVW / payload","3,500 kg · ≈ 1,000 kg"],
+  ["Water","90 L fresh · 85 L grey"],
+  ["Power","200 Ah LiFePO₄ · 400 W solar · 2 kW inv."],
+  ["Heating","2 kW diesel air heater"],
+  ["Conversion mass","≈ 320 kg"]]},
+ bed:{title:"Fixed Double Bed",sub:"1,880 × 1,400 × 590 mm",bullets:[
+  "Platform over full-width garage (430 mm clearance)",
+  "Memory-foam mattress, washable cover",
+  "Reading lights + USB-C, blackout blinds",
+  "Slatted base for ventilation"]},
+ garage:{title:"Rear Garage",sub:"≈ 700 L usable",bullets:[
+  "Accessed through both rear doors",
+  "Houses batteries, inverter & charger",
+  "Full-width ski / board / SUP storage",
+  "Tie-down rails + LED strip"]},
+ kitchen:{title:"Kitchen Block",sub:"1,360 mm run · 900 mm high",bullets:[
+  "Solid oak worktop, 2 cm",
+  "Soft-close drawers + trash pull-out",
+  "Overhead lockers with LED strip",
+  "Under-counter service bay"]},
+ fridge:{title:"Compressor Fridge",sub:"60 L · 12/24 V",bullets:[
+  "≈ 45 Ah/day typical use",
+  "Separate freezer compartment",
+  "Ventilated compressor bay"]},
+ sink:{title:"Sink + Tap",sub:"Stainless 380 × 340 mm",bullets:[
+  "Fold-away mixer tap",
+  "Hot water from 10 L calorifier",
+  "Glass lid adds extra worktop"]},
+ stove:{title:"Two-Burner Hob",sub:"Tempered glass",bullets:[
+  "Piezo ignition, cast pan supports",
+  "Fed from 2 × 11 kg propane locker",
+  "Gas sniffer + solenoid safety cutoff"]},
+ dinette:{title:"Dinette",sub:"Travel seating for 2",bullets:[
+  "Both seats belt-tested for travel",
+  "Seats lift for storage",
+  "Converts to child berth 1,700 × 600"]},
+ table:{title:"Pedestal Table",sub:"Ø 700 mm oak",bullets:[
+  "Single-pin release, fully removable",
+  "Stores flat in the garage",
+  "Outdoor leg kit for al-fresco mode"]},
+ bath:{title:"Wet Bath",sub:"1,060 × 850 × 2,000 mm",bullets:[
+  "Handheld shower, 10 L hot-water tank",
+  "Thetford C263 cassette toilet",
+  "Fold-down bamboo basin + mirror",
+  "12 V extractor, heated towel rail, floor drain"]},
+ toilet:{title:"Cassette Toilet",sub:"Thetford C263-CW",bullets:[
+  "17.5 L cassette, serviced from outside hatch",
+  "Electric flush from fresh tank"]},
+ basin:{title:"Fold-Down Basin",sub:"Bamboo + mixer",bullets:[
+  "Folds flat against wall when showering",
+  "Mirror cabinet above"]},
+ wardrobe:{title:"Wardrobe + Tech Cabinet",sub:"530 × 445 × 1,850 mm",bullets:[
+  "Hanging rail, 3 shelves, shoe rack",
+  "Upper cabinet: fuses, DC-DC charger, Wi-Fi router",
+  "Soft-close full-height doors"]},
+ heater:{title:"Diesel Air Heater",sub:"Webasto Air Top 2000",bullets:[
+  "Ducted to living area + cab demist",
+  "Runs from main fuel tank, 0.1–0.5 L/h",
+  "Underfloor mount near bulkhead, silent night mode"]},
+ fresh:{title:"Fresh Water",sub:"90 L potable",bullets:[
+  "Insulated & heated underfloor tank",
+  "Level sensors, 12 V pump @ 3 bar",
+  "Exterior refill port"]},
+ grey:{title:"Grey Water",sub:"85 L",bullets:[
+  "Insulated tank under wet bath",
+  "Heated discharge valve for winter",
+  "Quick-drain hose to ground"]},
+ gas:{title:"Propane Locker",sub:"2 × 11 kg bottles",bullets:[
+  "Drop-floor vents, sealed & drained",
+  "External fill + changeover regulator",
+  "Located under dinette seat"]},
+ battery:{title:"Electrical Core",sub:"LiFePO₄ 200 Ah @ 12 V",bullets:[
+  "2 × 100 Ah cells, 2,560 Wh usable ≈ 90%",
+  "Victron MultiPlus 2,000 W inverter/charger",
+  "Orion DC-DC 70 A while driving",
+  "BMV-712 shunt + Bluetooth monitoring"]},
+ solar:{title:"Solar Array",sub:"2 × 200 W monocrystalline",bullets:[
+  "Flat-mounted on H2 roof",
+  "Victron MPPT 100/30 charge controller",
+  "≈ 900 Wh/day spring–autumn"]},
+ fan:{title:"Roof Fans × 2",sub:"MaxxAir Deluxe",bullets:[
+  "Reversible, 10 speeds, rain sensor",
+  "One over kitchen, one over wet bath",
+  "Powered lift with remote"]},
+ winK:{title:"Kitchen Window",sub:"Left wall",bullets:[
+  "Double-glazed acrylic, 800 × 600",
+  "Integrated blind + fly screen"]},
+ cab:{title:"Stock Cab",sub:"LHD · 2 seats",bullets:[
+  "Optional swivel bases for lounge mode",
+  "Blackout tailoring on all glass",
+  "Dash USB-C + 230 V socket"]}
+};
+
+function renderPanel(id){
+  const d=DETAILS[id]||DETAILS.overview;
+  document.getElementById("p-title").textContent=d.title;
+  document.getElementById("p-sub").textContent=d.sub;
+  const b=document.getElementById("p-body");
+  b.innerHTML="";
+  if(d.rows){
+    const t=document.createElement("table"); t.className="rows";
+    d.rows.forEach(r=>{const tr=document.createElement("tr");
+      const a=document.createElement("td"); a.textContent=r[0];
+      const c=document.createElement("td"); c.textContent=r[1];
+      tr.append(a,c); t.append(tr);});
+    b.append(t);
+  }
+  if(d.bullets){
+    const u=document.createElement("ul");
+    d.bullets.forEach(x=>{const li=document.createElement("li"); li.textContent=x; u.append(li);});
+    b.append(u);
+  }
+}
+function setSelected(id){
+  document.querySelectorAll("svg .pick").forEach(g=>g.classList.toggle("sel",g.dataset.id===id));
+  if(window.__api3d) window.__api3d.select(id);
+  renderPanel(id);
+}
+document.querySelectorAll("svg .pick").forEach(g=>{
+  g.addEventListener("click",e=>{e.stopPropagation(); setSelected(g.dataset.id===document.querySelector("svg .pick.sel")?.dataset.id?"":g.dataset.id);});
+});
+document.querySelector("#view-plan svg").addEventListener("click",()=>setSelected(""));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")setSelected("");});
+
+document.querySelectorAll(".tabs button").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="view-"+b.dataset.view));
+    if(b.dataset.view==="v3d") init3d();
+  });
+});
+document.getElementById("chkUtil").addEventListener("change",e=>{
+  const s=e.target.checked?"":"none";
+  document.getElementById("utilLayerPlan").style.display=s;
+});
+renderPanel("");
+
+let gl3dLoading=false;
+async function init3d(){
+  if(window.__api3d||gl3dLoading) return;
+  gl3dLoading=true;
+  try{
+    const THREE=await import("three");
+    const {OrbitControls}=await import("three/addons/controls/OrbitControls.js");
+
+    const wrap=document.getElementById("glwrap");
+    const canvas=document.getElementById("gl");
+    const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+    renderer.shadowMap.enabled=true;
+    renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+
+    const scene=new THREE.Scene();
+    scene.fog=new THREE.Fog(0xeef0ea,18,40);
+
+    const camera=new THREE.PerspectiveCamera(46,1,0.1,100);
+    camera.position.set(5.2,3.4,4.6);
+
+    const controls=new OrbitControls(camera,canvas);
+    controls.target.set(0.2,1.0,0);
+    controls.enableDamping=true;
+    controls.dampingFactor=0.06;
+    controls.minDistance=1.6; controls.maxDistance=14;
+    controls.maxPolarAngle=Math.PI*0.495;
+    controls.autoRotate=true; controls.autoRotateSpeed=0.7;
+
+    const hemi=new THREE.HemisphereLight(0xfff6e8,0x8a8071,0.95); scene.add(hemi);
+    const sun=new THREE.DirectionalLight(0xfff2dd,1.7);
+    sun.position.set(6,9,4); sun.castShadow=true;
+    sun.shadow.mapSize.set(2048,2048);
+    Object.assign(sun.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:1,far:30});
+    sun.shadow.bias=-0.0004;
+    scene.add(sun);
+
+    const ground=new THREE.Mesh(new THREE.CircleGeometry(20,64),
+      new THREE.MeshStandardMaterial({color:0xe6dfd2,roughness:1}));
+    ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+    const grid=new THREE.GridHelper(24,48,0xcabfa9,0xded5c2);
+    grid.material.opacity=0.5; grid.material.transparent=true; scene.add(grid);
+
+    const CX=2550, CZ=1035, FL=0.15;
+    const pickMap={};
+    function mat(color,{op=1,rough=0.85,metal=0.05}={}){
+      return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal,
+        transparent:op<1,opacity:op});
+    }
+    function box(id,x1,x2,y1,y2,z1,z2,color,o={}){
+      const g=new THREE.BoxGeometry((x2-x1)/1000,(z2-z1)/1000,(y2-y1)/1000);
+      const m=new THREE.Mesh(g,mat(color,o));
+      m.position.set((x1+x2)/2/1000-CX/1000,(z1+z2)/2/1000+FL,(y1+y2)/2/1000-CZ/1000);
+      m.castShadow=!o.noShadow; m.receiveShadow=true;
+      if(id){m.userData.pick=id;(pickMap[id]=pickMap[id]||[]).push(m);}
+      scene.add(m); return m;
+    }
+    function cyl(id,r,h,x,y,zBottom,color,o={}){
+      const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,32),mat(color,o));
+      m.position.set(x/1000-CX/1000,zBottom/1000+FL+h/2000,y/1000-CZ/1000);
+      m.castShadow=!o.noShadow; m.receiveShadow=true;
+      if(id){m.userData.pick=id;(pickMap[id]=pickMap[id]||[]).push(m);}
+      scene.add(m); return m;
+    }
+
+    /* shell */
+    box("",150,4950,105,1965,-140,150,"#c9a06d",{rough:.9,noShadow:true});
+    box("",150,4950,-45,105,150,2000,"#f5f2ec",{op:.28,noShadow:true});
+    box("",150,4950,1965,2115,150,2000,"#f5f2ec",{op:.28,noShadow:true});
+    box("",105,150,105,1965,150,2000,"#efece6",{op:.35,noShadow:true});
+    box("",4950,4990,105,1965,150,2000,"#e8e4da",{op:.5,noShadow:true});
+    box("",150,4950,105,1965,2000,2060,"#efece6",{op:.3,noShadow:true});
+    box("",4990,6198,-15,2085,150,2130,"#eceff1",{op:.92,noShadow:true});
+    box("",100,5000,-60,2130,2495,2570,"#e8eaec",{noShadow:true});
+    box("",2550,3350,55,105,1150,1750,"#b8d3e2",{op:.55,rough:.2,noShadow:true});
+    box("",3450,4300,1965,2015,1100,1700,"#b8d3e2",{op:.55,rough:.2,noShadow:true});
+
+    /* bed */
+    box("bed",150,2030,365,1805,150,580,"#c9a06d");
+    box("bed",170,2010,385,1785,580,740,"#f0e8da");
+    box("bed",230,730,445,1000,740,860,"#ffffff");
+    box("bed",230,730,1170,1725,740,860,"#ffffff");
+    box("bed",1050,2010,385,1785,740,800,"#c96f4a",{rough:1});
+
+    /* kitchen */
+    box("kitchen",2350,3710,105,725,150,1050,"#b7cec8");
+    box("kitchen",2340,3720,95,735,1050,1090,"#e8e4da");
+    box("fridge",2895,2915,145,665,150,1050,"#8fa3ab",{metal:.4,rough:.4});
+    box("fridge",2915,2927,560,640,860,1030,"#6b7780",{metal:.5,rough:.3});
+    box("sink",2960,3320,235,535,1090,1102,"#b9c1c7",{metal:.6,rough:.3});
+    box("sink",2990,3290,265,505,1080,1091,"#7c868c",{metal:.6,rough:.3});
+    cyl("",18,180,3140,225,1090,"#b9c1c7",{metal:.7,rough:.25});
+    box("stove",3380,3680,255,575,1090,1102,"#14171a",{rough:.4});
+    cyl("stove",70,14,3460,415,1102,"#2c3238",{rough:.5});
+    cyl("stove",70,14,3600,415,1102,"#2c3238",{rough:.5});
+
+    /* dinette + table */
+    box("dinette",2350,3350,1385,1965,150,600,"#d9bf97");
+    box("dinette",2350,3350,1855,1965,600,1030,"#cbb08a");
+    cyl("table",160,30,3450,1665,150,"#5b6470",{metal:.4});
+    cyl("table",35,480,3450,1665,180,"#5b6470",{metal:.4});
+    cyl("table",350,40,3450,1665,660,"#c9a06d");
+
+    /* wet bath */
+    const bw={op:.4,rough:.6,noShadow:true};
+    box("bath",3710,3740,105,955,150,2150,"#9fc3d4",bw);
+    box("bath",3710,4770,105,135,150,2150,"#9fc3d4",bw);
+    box("bath",4740,4770,105,955,150,2150,"#9fc3d4",bw);
+    box("bath",3710,3950,925,955,150,2150,"#9fc3d4",bw);
+    box("bath",4430,4770,925,955,150,2150,"#9fc3d4",bw);
+    box("toilet",3800,4150,165,300,430,760,"#ffffff");
+    box("toilet",3800,4150,430,675,150,430,"#ffffff");
+    box("toilet",3810,4140,440,665,430,475,"#f4f6f7");
+    box("basin",4210,4530,155,455,950,1070,"#ffffff");
+    cyl("",22,1500,4700,180,150,"#c9ced2",{metal:.7,rough:.3});
+    cyl("",95,20,4620,180,1640,"#c9ced2",{metal:.7,rough:.3});
+    cyl("",90,8,4300,720,150,"#8fa0aa",{metal:.5});
+
+    /* wardrobe */
+    box("wardrobe",4420,4950,1520,1965,150,2000,"#c8ad89");
+    box("",4680,4692,1530,1955,160,1990,"#a98d68");
+
+    /* cab */
+    box("cab",5030,5510,340,800,150,450,"#7d8b96");
+    box("cab",5010,5530,320,820,450,590,"#8b9aa6");
+    box("cab",5400,5510,360,780,590,1130,"#7d8b96");
+    box("cab",5430,5490,460,680,1130,1260,"#8b9aa6");
+    box("cab",5030,5510,1270,1730,150,450,"#7d8b96");
+    box("cab",5010,5530,1250,1750,450,590,"#8b9aa6");
+    box("cab",5400,5510,1290,1690,590,1130,"#7d8b96");
+    box("cab",5430,5490,1390,1610,1130,1260,"#8b9aa6");
+    box("",5560,5700,150,1920,900,1250,"#3f464e",{noShadow:true});
+    const ws=box("",5740,5820,185,1885,1450,2170,"#aac7d8",{op:.6,rough:.15,noShadow:true});
+    ws.rotation.z=-0.55;
+
+    /* roof gear */
+    box("solar",1650,2650,185,1885,2570,2615,"#1d2f52",{rough:.35,noShadow:true});
+    box("solar",2750,3750,185,1885,2570,2615,"#1d2f52",{rough:.35,noShadow:true});
+    box("fan",3800,4100,885,1185,2570,2660,"#dfe3e6",{noShadow:true});
+    box("fan",3800,4100,935,1135,2660,2740,"#cfe3ee",{op:.6,noShadow:true});
+    box("fan",4200,4500,385,685,2570,2660,"#dfe3e6",{noShadow:true});
+    box("fan",4200,4500,435,635,2660,2740,"#cfe3ee",{op:.6,noShadow:true});
+
+    /* picking */
+    const ray=new THREE.Raycaster();
+    const mouse=new THREE.Vector2();
+    const tip=document.getElementById("tip");
+    let hovered=null, selectedId="";
+    function setEmit(id,on){
+      (pickMap[id]||[]).forEach(m=>{
+        m.material.emissive=m.material.emissive||new THREE.Color(0);
+        m.material.emissive.setHex(on?0x9c4a10:0x000000);
+      });
+    }
+    function rootId(o){while(o){if(o.userData&&o.userData.pick)return o.userData.pick;o=o.parent;}return null;}
+    canvas.addEventListener("pointermove",e=>{
+      const r=canvas.getBoundingClientRect();
+      mouse.x=((e.clientX-r.left)/r.width)*2-1;
+      mouse.y=-((e.clientY-r.top)/r.height)*2+1;
+      ray.setFromCamera(mouse,camera);
+      const hits=ray.intersectObjects(scene.children,true);
+      let id=null;
+      for(const h of hits){const p=rootId(h.object); if(p){id=p;break;} if(h.object===ground||h.object===grid)break;}
+      if(id!==hovered){
+        if(hovered&&hovered!==selectedId)setEmit(hovered,false);
+        hovered=id;
+        if(hovered&&hovered!==selectedId)setEmit(hovered,true);
+        canvas.style.cursor=hovered?"pointer":"";
+      }
+      if(hovered){tip.style.opacity=1; tip.textContent=(DETAILS[hovered]||{}).title||hovered;
+        tip.style.left=(e.clientX+14)+"px"; tip.style.top=(e.clientY+10)+"px";}
+      else tip.style.opacity=0;
+    });
+    canvas.addEventListener("pointerdown",()=>{controls.autoRotate=false;},{once:true});
+    canvas.addEventListener("click",()=>{
+      if(hovered){selectedId=hovered; setSelected(hovered);} else setSelected("");
+    });
+    window.__api3d={
+      select(id){
+        if(selectedId)setEmit(selectedId,false);
+        selectedId=id;
+        if(id)setEmit(id,true);
+      }
+    };
+
+    function resize(){
+      const w=wrap.clientWidth,h=wrap.clientHeight;
+      renderer.setSize(w,h,false);
+      renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+      camera.aspect=w/h; camera.updateProjectionMatrix();
+    }
+    new ResizeObserver(resize).observe(wrap);
+    resize();
+
+    renderer.setAnimationLoop(()=>{
+      controls.update();
+      renderer.render(scene,camera);
+    });
+  }catch(err){
+    console.warn(err);
+    document.getElementById("fallback3d").style.display="block";
+    const cv=document.getElementById("gl"); if(cv)cv.style.display="none";
+  }
+}
+</script>
+</body>
+</html>
